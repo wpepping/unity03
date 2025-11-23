@@ -3,6 +3,12 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour {
 	public string StartScene;
+	public float AutoStartDelay;
+
+	void Start() {
+		if (AutoStartDelay > 0)
+			Invoke(nameof(StartGame), AutoStartDelay);
+	}
 
 	public void StartGame() {
 		SceneManager.LoadScene(StartScene);
