@@ -7,6 +7,7 @@ public class TowerController : MonoBehaviour {
 	public GameObject	bullet;
 	public float		rateOfFire = 1f;
 	public float		baseDamage = 0.1f;
+	public int			energyCost = 100;
 	
 	private float				maxDist = 6;
 	private List<GameObject>	enemiesInRange;

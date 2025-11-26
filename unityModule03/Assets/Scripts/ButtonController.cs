@@ -7,13 +7,16 @@ public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler
 	public UnityEvent		onDrag;
 	public GameObject		towerLocations;
 	public GameObject		sourceObject;
+	public GameObject		baseObject;
 
+	private BaseController	baseController;
 	private RectTransform	rectTransform;
 	private Canvas			canvas;
 	private Vector2			position;
 	private float			enlargeFactor = 1.1f;
 
 	void Awake() {
+		baseController = baseObject.GetComponent<BaseController>();
 		rectTransform = GetComponent<RectTransform>();
 		canvas = GetComponentInParent<Canvas>();
 		position = rectTransform.anchoredPosition;
@@ -57,9 +60,11 @@ public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler
 
 	private void PlaceTower(GameObject location) {
 		Debug.Log("Place tower");
+		TowerController tower = sourceObject.GetComponent<TowerController>();
 		LocationController controller = location.gameObject.GetComponent<LocationController>();
-		if (controller == null || !controller.IsFree)
+		if (baseController.GetEnergyPoints() < tower.energyCost || controller == null || !controller.IsFree)
 			return;
+
 		GameObject copy = Instantiate(
 			sourceObject,
 			location.transform.position,
@@ -67,6 +72,7 @@ public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler
 		);
 		controller.IsFree = false;
 		copy.SetActive(true);
+		baseController.GainEnergy(-tower.energyCost);
 	}
 
 	private void SetActiveChildren(GameObject obj, bool active) {

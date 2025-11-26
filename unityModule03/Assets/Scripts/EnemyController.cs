@@ -6,6 +6,7 @@ public class EnemyController : MonoBehaviour {
 	public float		speed = 0.4f;
 	public float		dest = -1.83f;
 	public float		hitPoints = 3f;
+	public int			energyGain = 5;
 	public UnityEvent	onHit;
 	public UnityEvent	onDestroy;
 
