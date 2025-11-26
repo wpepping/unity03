@@ -37,10 +37,8 @@ public class EnemyController : MonoBehaviour {
 				onDestroy.Invoke();
 				Destroy(gameObject);
 			}
-			else {
-				Debug.Log($"Enemy takes damage, hitpoints left: {hitPoints}");
+			else
 				hitPoints -= damage;
-			}
 		}
 	}
 }

@@ -4,12 +4,13 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class BaseController : MonoBehaviour {
-	public int			maxHitPoints = 5;
-	public int			maxEnergyPoints = 100;
-	public int			startEnergyPoints = 100;
-	public UnityEvent	onDeath;
-	public Slider		hpSlider;
-	public Slider		energySlider;
+	public int					maxHitPoints = 5;
+	public int					maxEnergyPoints = 100;
+	public int					startEnergyPoints = 100;
+	public UnityEvent			onDeath;
+	public Slider				hpSlider;
+	public Slider				energySlider;
+	public ActionBarController	actionBar;
 
 	private int			hitPoints;
 	private int			energyPoints = 0;
@@ -26,9 +27,8 @@ public class BaseController : MonoBehaviour {
 	}
 
 	public void Hit(int damage) {
-		hitPoints -= damage;
-		hpSlider.value = hitPoints;
 		Debug.Log($"Based hit, hitpoints left: {hitPoints}");
+		SetHp(hitPoints - damage);
 		if (hitPoints == 0) {
 			onDeath.Invoke();
 			Debug.Log("Game Over");
@@ -36,9 +36,10 @@ public class BaseController : MonoBehaviour {
 	}
 
 	public void GainEnergy(int points) {
-		energyPoints += points;
+		energyPoints = Mathf.Clamp(energyPoints + points, 0, maxEnergyPoints);
 		energySlider.value = energyPoints;
 		energyText.text = energyPoints.ToString();
+		actionBar.EnableDisableButtons(energyPoints);
 	}
 
 	public int GetEnergyPoints() {

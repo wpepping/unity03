@@ -8,9 +8,11 @@ public class TowerController : MonoBehaviour {
 	public float		rateOfFire = 1f;
 	public float		baseDamage = 0.1f;
 	public int			energyCost = 100;
+	public int			cooldown = 5;
 	
 	private float				maxDist = 6;
 	private List<GameObject>	enemiesInRange;
+	private bool				available = true;
 
 	void Start() {
 		enemiesInRange = new List<GameObject>();
@@ -31,15 +33,21 @@ public class TowerController : MonoBehaviour {
 	}
 
 	void OnTriggerEnter2D(Collider2D collider) {
-		if (collider.CompareTag("Enemy")) {
-			Debug.Log("Enemy in range");
+		if (collider.CompareTag("Enemy"))
 			enemiesInRange.Add(collider.gameObject);
-		}
 	}
 
 	void OnTriggerExit2D(Collider2D collider) {
 		if (collider.CompareTag("Enemy") && enemiesInRange.Count > 0)
 			enemiesInRange.Remove(collider.gameObject);
+	}
+
+	public void setAvailable(bool value) {
+		available = value;
+	}
+
+	public bool isAvailable() {
+		return available;
 	}
 
 	private GameObject getTarget() {

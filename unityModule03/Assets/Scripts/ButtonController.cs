@@ -1,22 +1,30 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.Tilemaps;
 
 public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDragHandler {
 	public UnityEvent		onDrag;
-	public GameObject		towerLocations;
+	public Tilemap			towerLocations; 
 	public GameObject		sourceObject;
 	public GameObject		baseObject;
 
-	private BaseController	baseController;
-	private RectTransform	rectTransform;
-	private Canvas			canvas;
-	private Vector2			position;
-	private float			enlargeFactor = 1.1f;
+	private BaseController		baseController;
+	private TowerController 	towerController;
+	private RectTransform		rectTransform;
+	private Canvas				canvas;
+	private Vector2				position;
+	private float				enlargeFactor = 1.1f;
+	private HashSet<Vector3Int> occupiedCells;
+	private Vector3Int			highlightPosition;
 
 	void Awake() {
+		occupiedCells = new HashSet<Vector3Int>();
 		baseController = baseObject.GetComponent<BaseController>();
+		towerController = sourceObject.GetComponent<TowerController>();
 		rectTransform = GetComponent<RectTransform>();
 		canvas = GetComponentInParent<Canvas>();
 		position = rectTransform.anchoredPosition;
@@ -27,7 +35,8 @@ public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler
 	public void OnDrag(PointerEventData eventData) {
 		rectTransform.anchoredPosition += eventData.delta / canvas.scaleFactor;
 		onDrag.Invoke();
-		SetActiveChildren(towerLocations, true);
+		SetVisible(towerLocations, true);
+		Vector3 worldPoint = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
 	}
 
 	public void OnPointerDown(PointerEventData eventData) {
@@ -40,44 +49,39 @@ public class ButtonController : MonoBehaviour, IPointerDownHandler, IDragHandler
 
 		Vector3 worldPoint = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
 		worldPoint.z = 0f;
-		GameObject location = GetTowerLocation(worldPoint);
-		if (location != null)
-			PlaceTower(location);
+		Vector3Int cellPosition = towerLocations.WorldToCell(worldPoint);
+		Debug.Log($"Checking HasTile: {towerLocations.HasTile(cellPosition)}");
+		if (towerLocations.HasTile(cellPosition) && IsFree(cellPosition))
+			PlaceTower(cellPosition);
 
-		SetActiveChildren(towerLocations, false);
+		SetVisible(towerLocations, false);
 	}
 
-	private GameObject GetTowerLocation(Vector3 position) {
-		Debug.Log("Checking for TowerLocation");
-		Collider2D hit = Physics2D.OverlapPoint(position);
-		if (hit != null) Debug.Log($"GameObject found: {hit.gameObject.name}");
-		if (hit != null && hit.transform.IsChildOf(towerLocations.transform)) {
-			Debug.Log("TowerLocation found");
-			return hit.gameObject;
-		}
-		return null;
-	}
-
-	private void PlaceTower(GameObject location) {
+	private void PlaceTower(Vector3Int cellPosition) {
 		Debug.Log("Place tower");
-		TowerController tower = sourceObject.GetComponent<TowerController>();
-		LocationController controller = location.gameObject.GetComponent<LocationController>();
-		if (baseController.GetEnergyPoints() < tower.energyCost || controller == null || !controller.IsFree)
+		Vector3 position = towerLocations.GetCellCenterWorld(cellPosition);
+		if (baseController.GetEnergyPoints() < towerController.energyCost)
 			return;
 
-		GameObject copy = Instantiate(
-			sourceObject,
-			location.transform.position,
-			location.transform.rotation
-		);
-		controller.IsFree = false;
+		GameObject copy = Instantiate(sourceObject, position, Quaternion.identity);
+		occupiedCells.Add(cellPosition);
 		copy.SetActive(true);
-		baseController.GainEnergy(-tower.energyCost);
+		towerController.setAvailable(false);
+		StartCoroutine(MakeAvailable(towerController.cooldown));
+		baseController.GainEnergy(-towerController.energyCost);
 	}
 
-	private void SetActiveChildren(GameObject obj, bool active) {
-		foreach (Transform location in obj.transform) {
-			location.gameObject.SetActive(active);
-		}
+	private void SetVisible(Tilemap tilemap, bool active) {
+		tilemap.gameObject.SetActive(active);
+	}
+
+	private bool IsFree(Vector3Int cellPosition) {
+		return !occupiedCells.Contains(cellPosition);
+	}
+
+	private IEnumerator MakeAvailable(int cooldown) {
+		yield return new WaitForSeconds(cooldown);
+		towerController.setAvailable(true);
+		baseController.GainEnergy(0); // Trigger EnableDisableButtons
 	}
 }
